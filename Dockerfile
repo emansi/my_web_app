@@ -37,8 +37,7 @@ RUN sed -i 's/\/var\/www\/html/\/var\/www\/my_project/g' /etc/nginx/sites-enable
 RUN sed -i 's/pid \/run\/nginx.pid;/#pid \/run\/nginx.pid;/g' /etc/nginx/nginx.conf
 
 # Создаем символьную ссылку на директорию sites-enabled (если ее нет)
-
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
-# Замените строку с командой запуска Nginx в вашем Dockerfile
+
 CMD ["nginx", "-g", "daemon off;"]
 
