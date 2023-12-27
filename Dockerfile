@@ -1,43 +1,40 @@
-# Используем базовый образ Ubuntu
+# 1. Выберите базовый образ
 FROM ubuntu:latest
 
-# Обновляем apt-кеш и устанавливаем необходимые пакеты
-RUN apt-get update && apt-get install -y nginx
+# 2. Выполнить обновление apt-кеша и установить необходимые пакеты
+RUN apt-get update \
+    && apt-get install -y nginx \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Очищаем кеш
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Удаляем содержимое директории /var/www/
+# 3. Очистить содержимое директории /var/www/
 RUN rm -rf /var/www/*
 
-# Создаем директории и копируем файлы
+# 4. Создать директории /var/www/my_project и /var/www/my_project/img
 RUN mkdir -p /var/www/my_project/img
-COPY index.html /var/www/my_project/
-COPY img/img.jpg /var/www/my_project/img/
 
-# Задаем права на директории
-RUN chmod -R 755 /var/www/my_project /run /var/lib/nginx /var/log/nginx
+# 5. Поместить из папки с докер файлом в директорию /var/www/my_project файлы index.html и img.jpg
+COPY index.html img.jpg /var/www/my_project/
 
-# Создаем группу my_user_group
-RUN groupadd my_user_group
+# 6. Задать рекурсивно права на папку /var/www/my_project
+RUN chmod -R 755 /var/www/my_project
 
-# Создаем пользователя my_user и добавляем его в группу
-RUN useradd -g my_user_group my_user
+# 7. Создать пользователя и группу
+RUN groupadd -r kotik \
+    && useradd -m -r -g kotik ann
 
-# Добавляем пользователя в группу
-RUN usermod -aG my_user_group my_user
+# 8. Присвоить права созданных пользователя и группы на папку /var/www/my_project
+RUN chown -R ann:kotik /var/www/my_project
 
-# Задаем права на директории
-RUN chown -R my_user:my_user_group /var/www/my_project /run /var/lib/nginx /var/log/nginx
-
-# Заменяем строку в файле /etc/nginx/sites-enabled/default
+# 9. Заменить в файле /etc/nginx/sites-enabled/default подстроку (/var/www/html) так, чтобы она соответствовала (/var/www/my_project)
 RUN sed -i 's/\/var\/www\/html/\/var\/www\/my_project/g' /etc/nginx/sites-enabled/default
 
-# Заменяем строку в файле /etc/nginx/nginx.conf
-RUN sed -i 's/pid \/run\/nginx.pid;/#pid \/run\/nginx.pid;/g' /etc/nginx/nginx.conf
+# 10. Настроить пользователя для nginx
+RUN sed -i 's/user www-data;/user ann;/' /etc/nginx/nginx.conf
 
-# Создаем символьную ссылку на директорию sites-enabled (если ее нет)
-RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+# Открываем порт для nginx
+EXPOSE 80
 
+# Запускаем nginx в фоновом режиме
 CMD ["nginx", "-g", "daemon off;"]
 
